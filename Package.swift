@@ -9,11 +9,14 @@ let package = Package(
         .library(name: "Silica", targets: ["Silica"])
     ],
     dependencies: [
-        .package(url: "https://github.com/PureSwift/Cairo.git", .branch("master"))
+        .package(url: "https://github.com/AgentFeeble/Cairo.git", .branch("pango")),
+        .package(url: "https://github.com/AgentFeeble/PangoSwift", .branch("main")),
     ],
     targets: [
-        .target(name: "Silica", dependencies: ["Cairo"]),
+        .target(name: "Silica", dependencies: [
+            "Cairo",
+            .productItem(name: "Pango", package: "PangoSwift")
+        ]),
         .testTarget(name: "SilicaTests", dependencies: ["Silica"])
     ]
-
 )

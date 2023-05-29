@@ -3,10 +3,19 @@
     "pins": [
       {
         "package": "Cairo",
-        "repositoryURL": "https://github.com/PureSwift/Cairo.git",
+        "repositoryURL": "https://github.com/AgentFeeble/Cairo.git",
         "state": {
-          "branch": "master",
-          "revision": "b5f867a56a20d2f0064ccb975ae4a669b374e9e0",
+          "branch": "pango",
+          "revision": "bc6deaf8d238852b0a7f83401d5786198d6dad97",
+          "version": null
+        }
+      },
+      {
+        "package": "Pango",
+        "repositoryURL": "https://github.com/AgentFeeble/PangoSwift",
+        "state": {
+          "branch": "main",
+          "revision": "eeceb18f23c54d3413d35fa8042a2d6d027c6b0a",
           "version": null
         }
       }

@@ -16,6 +16,15 @@ import Cairo
 import CCairo
 import Foundation
 
+import Pango
+
+// There seems to be a really strange bug with Swift & the Package Manager. After adding the import for `Pango`, this
+// file fails to compile if some symbols from `Cairo` are accessed before symbols from CCairo. Adding this unused
+// function fixes the issue.
+private func weirdSwiftHack() {
+    _ = CCairo.CAIRO_STATUS_INVALID_RESTORE
+}
+
 public final class CGContext {
     
     // MARK: - Properties
@@ -31,6 +40,8 @@ public final class CGContext {
     // MARK: - Private Properties
     
     private var internalState: State = State()
+
+    private var _pangoContext: PangoContext?
     
     // MARK: - Initialization
     
@@ -52,6 +63,17 @@ public final class CGContext {
     }
     
     // MARK: - Accessors
+
+    public var pangoContext: PangoContext {
+
+        if let pangoContext = _pangoContext {
+            return pangoContext
+        }
+
+        let pangoContext = PangoContext(cairoContext: self.cairoContext)
+        _pangoContext = pangoContext
+        return pangoContext
+    }
     
     /// Returns the current transformation matrix.
     public var currentTransform: CGAffineTransform {
