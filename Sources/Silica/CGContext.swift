@@ -19,7 +19,9 @@ import Foundation
 public final class CGContext {
     
     // MARK: - Properties
-    
+
+    public let cairoContext: Cairo.Context
+
     public let surface: Cairo.Surface
     
     public let size: CGSize
@@ -27,8 +29,6 @@ public final class CGContext {
     public var textMatrix = CGAffineTransform.identity
     
     // MARK: - Private Properties
-    
-    private let internalContext: Cairo.Context
     
     private var internalState: State = State()
     
@@ -47,7 +47,7 @@ public final class CGContext {
         context.lineWidth = 1.0
         
         self.size = size
-        self.internalContext = context
+        self.cairoContext = context
         self.surface = surface
     }
     
@@ -56,12 +56,12 @@ public final class CGContext {
     /// Returns the current transformation matrix.
     public var currentTransform: CGAffineTransform {
         
-        return CGAffineTransform(cairo: internalContext.matrix)
+        return CGAffineTransform(cairo: cairoContext.matrix)
     }
     
     public var currentPoint: CGPoint? {
         
-        guard let point = internalContext.currentPoint
+        guard let point = cairoContext.currentPoint
             else { return nil }
         
         return CGPoint(x: CGFloat(point.x), y: CGFloat(point.y))
@@ -69,49 +69,49 @@ public final class CGContext {
     
     public var shouldAntialias: Bool {
         
-        get { return internalContext.antialias != CAIRO_ANTIALIAS_NONE }
+        get { return cairoContext.antialias != CAIRO_ANTIALIAS_NONE }
         
-        set { internalContext.antialias = newValue ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE }
+        set { cairoContext.antialias = newValue ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE }
     }
     
     public var lineWidth: CGFloat {
         
-        get { return CGFloat(internalContext.lineWidth) }
+        get { return CGFloat(cairoContext.lineWidth) }
         
-        set { internalContext.lineWidth = Double(newValue) }
+        set { cairoContext.lineWidth = Double(newValue) }
     }
     
     public var lineJoin: CGLineJoin {
         
-        get { return CGLineJoin(cairo: internalContext.lineJoin) }
+        get { return CGLineJoin(cairo: cairoContext.lineJoin) }
         
-        set { internalContext.lineJoin = newValue.toCairo() }
+        set { cairoContext.lineJoin = newValue.toCairo() }
     }
     
     public var lineCap: CGLineCap {
         
-        get { return CGLineCap(cairo: internalContext.lineCap) }
+        get { return CGLineCap(cairo: cairoContext.lineCap) }
         
-        set { internalContext.lineCap = newValue.toCairo() }
+        set { cairoContext.lineCap = newValue.toCairo() }
     }
     
     public var miterLimit: CGFloat {
         
-        get { return CGFloat(internalContext.miterLimit) }
+        get { return CGFloat(cairoContext.miterLimit) }
         
-        set { internalContext.miterLimit = Double(newValue) }
+        set { cairoContext.miterLimit = Double(newValue) }
     }
     
     public var lineDash: (phase: CGFloat, lengths: [CGFloat]) {
         
         get {
-            let cairoValue = internalContext.lineDash
+            let cairoValue = cairoContext.lineDash
             
             return (CGFloat(cairoValue.phase), cairoValue.lengths.map({ CGFloat($0) }))
         }
         
         set { 
-            internalContext.lineDash = (Double(newValue.phase), newValue.lengths.map({ Double($0) })) }
+            cairoContext.lineDash = (Double(newValue.phase), newValue.lengths.map({ Double($0) })) }
     }
     
     @inline(__always)
@@ -122,9 +122,9 @@ public final class CGContext {
     
     public var tolerance: CGFloat {
         
-        get { return CGFloat(internalContext.tolerance) }
+        get { return CGFloat(cairoContext.tolerance) }
         
-        set { internalContext.tolerance = Double(newValue) }
+        set { cairoContext.tolerance = Double(newValue) }
     }
     
     /// Returns a `Path` built from the current path information in the graphics context.
@@ -132,7 +132,7 @@ public final class CGContext {
         
         var path = CGPath()
         
-        let cairoPath = internalContext.copyPath()
+        let cairoPath = cairoContext.copyPath()
         
         var index = 0
         
@@ -280,44 +280,44 @@ public final class CGContext {
     
     public func beginPage() {
         
-        internalContext.copyPage()
+        cairoContext.copyPage()
     }
     
     public func endPage() {
         
-        internalContext.showPage()
+        cairoContext.showPage()
     }
     
     // MARK: Transforming the Coordinate Space
     
     public func scaleBy(x: CGFloat, y: CGFloat) {
         
-        internalContext.scale(x: Double(x), y: Double(y))
+        cairoContext.scale(x: Double(x), y: Double(y))
     }
     
     public func translateBy(x: CGFloat, y: CGFloat) {
         
-        internalContext.translate(x: Double(x), y: Double(y))
+        cairoContext.translate(x: Double(x), y: Double(y))
     }
     
     public func rotateBy(_ angle: CGFloat) {
         
-        internalContext.rotate(Double(angle))
+        cairoContext.rotate(Double(angle))
     }
     
     /// Transforms the user coordinate system in a context using a specified matrix.
     public func concatenate(_ transform: CGAffineTransform) {
         
-        internalContext.transform(transform.toCairo())
+        cairoContext.transform(transform.toCairo())
     }
     
     // MARK: Saving and Restoring the Graphics State
     
     public func save() throws {
         
-        internalContext.save()
+        cairoContext.save()
         
-        if let error = internalContext.status.toError() {
+        if let error = cairoContext.status.toError() {
             
             throw error
         }
@@ -340,9 +340,9 @@ public final class CGContext {
         guard let restoredState = internalState.next
             else { throw CAIRO_STATUS_INVALID_RESTORE.toError()! }
         
-        internalContext.restore()
+        cairoContext.restore()
         
-        if let error = internalContext.status.toError() {
+        if let error = cairoContext.status.toError() {
             
             throw error
         }
@@ -372,31 +372,31 @@ public final class CGContext {
     /// Creates a new empty path in a graphics context.
     public func beginPath() {
         
-        internalContext.newPath()
+        cairoContext.newPath()
     }
     
     /// Closes and terminates the current path’s subpath.
     public func closePath() {
         
-        internalContext.closePath()
+        cairoContext.closePath()
     }
     
     /// Begins a new subpath at the specified point.
     public func move(to point: CGPoint) {
         
-        internalContext.move(to: (x: Double(point.x), y: Double(point.y)))
+        cairoContext.move(to: (x: Double(point.x), y: Double(point.y)))
     }
     
     /// Appends a straight line segment from the current point to the specified point.
     public func addLine(to point: CGPoint) {
         
-        internalContext.line(to: (x: Double(point.x), y: Double(point.y)))
+        cairoContext.line(to: (x: Double(point.x), y: Double(point.y)))
     }
     
     /// Adds a cubic Bézier curve to the current path, with the specified end point and control points.
     func addCurve(to end: CGPoint, control1: CGPoint, control2: CGPoint) {
         
-        internalContext.curve(to: ((x: Double(control1.x), y: Double(control1.y)),
+        cairoContext.curve(to: ((x: Double(control1.x), y: Double(control1.y)),
                                    (x: Double(control2.x), y: Double(control2.y)),
                                    (x: Double(end.x), y: Double(end.y))))
     }
@@ -418,7 +418,7 @@ public final class CGContext {
     /// Adds an arc of a circle to the current path, specified with a radius and angles.
     public func addArc(center: CGPoint, radius: CGFloat, startAngle: CGFloat, endAngle: CGFloat, clockwise: Bool) {
         
-        internalContext.addArc(center: (x: Double(center.x), y: Double(center.y)),
+        cairoContext.addArc(center: (x: Double(center.x), y: Double(center.y)),
                                radius: Double(radius),
                                angle: (Double(startAngle), Double(endAngle)),
                                negative: clockwise)
@@ -491,7 +491,7 @@ public final class CGContext {
     /// Adds a rectangular path to the current path.
     public func addRect(_ rect: CGRect) {
         
-        internalContext.addRectangle(x: Double(rect.origin.x),
+        cairoContext.addRectangle(x: Double(rect.origin.x),
                                      y: Double(rect.origin.y),
                                      width: Double(rect.size.width),
                                      height: Double(rect.size.height))
@@ -527,9 +527,9 @@ public final class CGContext {
             startShadow()
         }
         
-        internalContext.source = internalState.stroke?.pattern ?? DefaultPattern
+        cairoContext.source = internalState.stroke?.pattern ?? DefaultPattern
         
-        internalContext.stroke()
+        cairoContext.stroke()
         
         if internalState.shadow != nil {
             
@@ -552,10 +552,10 @@ public final class CGContext {
     
     public func clear() {
         
-        internalContext.source = internalState.fill?.pattern ?? DefaultPattern
+        cairoContext.source = internalState.fill?.pattern ?? DefaultPattern
         
-        internalContext.clip()
-        internalContext.clipPreserve()
+        cairoContext.clip()
+        cairoContext.clipPreserve()
     }
     
     public func drawPath(using mode: CGDrawingMode = CGDrawingMode()) {
@@ -573,14 +573,14 @@ public final class CGContext {
         
         if evenOdd {
             
-            internalContext.fillRule = CAIRO_FILL_RULE_EVEN_ODD
+            cairoContext.fillRule = CAIRO_FILL_RULE_EVEN_ODD
         }
         
-        internalContext.clip()
+        cairoContext.clip()
         
         if evenOdd {
             
-            internalContext.fillRule = CAIRO_FILL_RULE_WINDING
+            cairoContext.fillRule = CAIRO_FILL_RULE_WINDING
         }
     }
     
@@ -597,35 +597,35 @@ public final class CGContext {
     public func beginTransparencyLayer(in rect: CGRect? = nil, auxiliaryInfo: [String: Any]? = nil) {
         
         // in case we clip (for the rect)
-        internalContext.save()
+        cairoContext.save()
         
         if let rect = rect {
             
-            internalContext.newPath()
+            cairoContext.newPath()
             addRect(rect)
-            internalContext.clip()
+            cairoContext.clip()
         }
         
         saveGState()
         alpha = 1.0
         internalState.shadow = nil
         
-        internalContext.pushGroup()
+        cairoContext.pushGroup()
     }
     
     public func endTransparencyLayer() {
         
-        let group = internalContext.popGroup()
+        let group = cairoContext.popGroup()
         
         // undo change to alpha and shadow state
         restoreGState()
         
         // paint contents
-        internalContext.source = group
-        internalContext.paint(alpha: Double(internalState.alpha))
+        cairoContext.source = group
+        cairoContext.paint(alpha: Double(internalState.alpha))
         
         // undo clipping (if any)
-        internalContext.restore()
+        cairoContext.restore()
     }
     
     // MARK: - Drawing an Image to a Graphics Context
@@ -633,7 +633,7 @@ public final class CGContext {
     /// Draws an image into a graphics context.
     public func draw(_ image: CGImage, in rect: CGRect) {
         
-        internalContext.save()
+        cairoContext.save()
         
         let imageSurface = image.surface
         
@@ -659,34 +659,34 @@ public final class CGContext {
         
         pattern.extend = .pad
         
-        internalContext.operator = CAIRO_OPERATOR_OVER
+        cairoContext.operator = CAIRO_OPERATOR_OVER
         
-        internalContext.source = pattern
+        cairoContext.source = pattern
         
-        internalContext.addRectangle(x: Double(rect.origin.x),
+        cairoContext.addRectangle(x: Double(rect.origin.x),
                                      y: Double(rect.origin.y),
                                      width: Double(rect.size.width),
                                      height: Double(rect.size.height))
         
-        internalContext.fill()
+        cairoContext.fill()
         
-        internalContext.restore()
+        cairoContext.restore()
     }
     
     // MARK: - Drawing Text
     
     public func setFont(_ font: CGFont) {
         
-        internalContext.fontFace = font.scaledFont.face
+        cairoContext.fontFace = font.scaledFont.face
         internalState.font = font
     }
     
     /// Uses the Cairo toy text API.
     public func show(toyText text: String) {
         
-        let oldPoint = internalContext.currentPoint
+        let oldPoint = cairoContext.currentPoint
         
-        internalContext.move(to: (0, 0))
+        cairoContext.move(to: (0, 0))
         
         // calculate text matrix
         
@@ -696,23 +696,23 @@ public final class CGContext {
         
         cairoTextMatrix.multiply(a: cairoTextMatrix, b: textMatrix.toCairo())
         
-        internalContext.setFont(matrix: cairoTextMatrix)
+        cairoContext.setFont(matrix: cairoTextMatrix)
         
-        internalContext.source = internalState.fill?.pattern ?? DefaultPattern
+        cairoContext.source = internalState.fill?.pattern ?? DefaultPattern
         
-        internalContext.show(text: text)
+        cairoContext.show(text: text)
         
-        let distance = internalContext.currentPoint ?? (0, 0)
+        let distance = cairoContext.currentPoint ?? (0, 0)
         
         textPosition = CGPoint(x: textPosition.x + CGFloat(distance.x), y: textPosition.y + CGFloat(distance.y))
         
         if let oldPoint = oldPoint {
             
-            internalContext.move(to: oldPoint)
+            cairoContext.move(to: oldPoint)
             
         } else {
             
-            internalContext.newPath()
+            cairoContext.newPath()
         }
     }
     
@@ -795,12 +795,12 @@ public final class CGContext {
         
         cairoTextMatrix.multiply(a: cairoTextMatrix, b: silicaTextMatrix)
         
-        internalContext.setFont(matrix: cairoTextMatrix)
+        cairoContext.setFont(matrix: cairoTextMatrix)
         
-        internalContext.source = internalState.fill?.pattern ?? DefaultPattern
+        cairoContext.source = internalState.fill?.pattern ?? DefaultPattern
         
         // show glyphs
-        cairoGlyphs.forEach { internalContext.show(glyph: $0) }
+        cairoGlyphs.forEach { cairoContext.show(glyph: $0) }
     }
     
     // MARK: - Private Functions
@@ -812,15 +812,15 @@ public final class CGContext {
             startShadow()
         }
         
-        internalContext.source = internalState.fill?.pattern ?? DefaultPattern
+        cairoContext.source = internalState.fill?.pattern ?? DefaultPattern
         
-        internalContext.fillRule = evenOdd ? CAIRO_FILL_RULE_EVEN_ODD : CAIRO_FILL_RULE_WINDING
+        cairoContext.fillRule = evenOdd ? CAIRO_FILL_RULE_EVEN_ODD : CAIRO_FILL_RULE_WINDING
         
-        internalContext.fillPreserve()
+        cairoContext.fillPreserve()
         
         if preserve == false {
             
-            internalContext.newPath()
+            cairoContext.newPath()
         }
         
         if internalState.shadow != nil {
@@ -828,7 +828,7 @@ public final class CGContext {
             endShadow()
         }
         
-        if let error = internalContext.status.toError() {
+        if let error = cairoContext.status.toError() {
             
             throw error
         }
@@ -836,14 +836,14 @@ public final class CGContext {
     
     private func startShadow() {
         
-        internalContext.pushGroup()
+        cairoContext.pushGroup()
     }
     
     private func endShadow() {
         
-        let pattern = internalContext.popGroup()
+        let pattern = cairoContext.popGroup()
         
-        internalContext.save()
+        cairoContext.save()
         
         let radius = internalState.shadow!.radius
         
@@ -859,17 +859,17 @@ public final class CGContext {
         
         alphaSurface.flush()
         
-        internalContext.source = internalState.shadow!.pattern
+        cairoContext.source = internalState.shadow!.pattern
         
-        internalContext.mask(surface: alphaSurface,
+        cairoContext.mask(surface: alphaSurface,
                              at: (Double(internalState.shadow!.offset.width),
                                   Double(internalState.shadow!.offset.height)))
         
         // draw content
-        internalContext.source = pattern
-        internalContext.paint()
+        cairoContext.source = pattern
+        cairoContext.paint()
         
-        internalContext.restore()
+        cairoContext.restore()
     }
 }
 
